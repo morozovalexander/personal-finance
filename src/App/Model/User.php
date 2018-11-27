@@ -4,6 +4,13 @@ namespace App\Model;
 
 class User
 {
+    private $db;
+
+    public function __construct()
+    {
+        $this->db = new Database();
+    }
+
     /**
      * @var int
      */
@@ -22,11 +29,6 @@ class User
     /**
      * @var string
      */
-    protected $salt;
-
-    /**
-     * @var string
-     */
     protected $firstName;
 
     /**
@@ -35,9 +37,9 @@ class User
     protected $lastName;
 
     /**
-     * @var string
+     * @var integer
      */
-    protected $token;
+    protected $moneyAmount;
 
     /**
      * @return int
@@ -66,14 +68,6 @@ class User
     /**
      * @return string
      */
-    public function getSalt(): string
-    {
-        return $this->salt;
-    }
-
-    /**
-     * @return string
-     */
     public function getFirstName(): string
     {
         return $this->firstName;
@@ -88,18 +82,60 @@ class User
     }
 
     /**
-     * @return string
+     * @return int
      */
-    public function getToken(): string
+    public function getMoneyAmount(): int
     {
-        return $this->token;
+        return $this->moneyAmount;
     }
 
     /**
-     * @param string $token
+     * @param int $moneyAmount
      */
-    public function setToken(string $token)
+    public function setMoneyAmount(int $moneyAmount): void
     {
-        $this->token = $token;
+        $this->moneyAmount = $moneyAmount;
+    }
+
+    /**
+     * @return User $this
+     */
+    public function getCurrentUser(): User
+    {
+        $userDataArray = $this->db->findUserArrayByUsername($_SESSION['username']);
+
+        $this->id = $userDataArray['id'];
+        $this->username = $userDataArray['username'];
+        $this->firstName = $userDataArray['firstname'];
+        $this->lastName = $userDataArray['lastname'];
+        $this->moneyAmount = $userDataArray['money_amount'];
+
+        return $this;
+    }
+
+    /**
+     * @param int $moneyToPull
+     * @return bool|\PDOStatement
+     */
+    public function pullMoney(int $moneyToPull): bool
+    {
+        // any money transfer stuff
+
+        //record new money amount
+        $newMoneyAmount = $this->getMoneyAmount() - $moneyToPull;
+
+        $sql = 'UPDATE users SET money_amount = :money WHERE id = :id';
+        $params = [
+            'id' => $this->getId(),
+            'money' => $newMoneyAmount
+        ];
+
+        if ($this->db->transactionQuery($sql, $params)) {
+            // update user money amount in object
+            $this->setMoneyAmount($newMoneyAmount);
+            return true;
+        }
+
+        return false;
     }
 }
