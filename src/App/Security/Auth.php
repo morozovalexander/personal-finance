@@ -4,9 +4,24 @@ namespace App\Security;
 
 use App\Model\Database;
 use App\Model\User;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use App\Config\Config;
 
 class Auth
 {
+    /**
+     * @var Logger
+     */
+    protected $logger;
+
+    public function __construct()
+    {
+        $this->configs = Config::getConfigs();
+        $this->logger = new Logger('name');
+        $this->logger->pushHandler(new StreamHandler($this->configs['logs_path'], Logger::DEBUG));
+    }
+
     /**
      * @return bool
      */
@@ -33,6 +48,7 @@ class Auth
         if (!$userArray) {
             return null;
         }
+        $this->logger->info('User with username "' . $login . '" logged in');
 
         if (!password_verify($password, $userArray['password'])) {
             return null;
@@ -48,6 +64,7 @@ class Auth
 
     public function logoutUser(): void
     {
+        $this->logger->info('User with username "' . $_SESSION['username'] . '" logged out');
         unset($_SESSION['username']);
     }
 }

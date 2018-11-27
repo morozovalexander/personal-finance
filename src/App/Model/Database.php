@@ -32,7 +32,7 @@ class Database
             $this->configs['dbpass']
         );
         $this->logger = new Logger('name');
-        $this->logger->pushHandler(new StreamHandler($this->configs['logs_path'], Logger::WARNING));
+        $this->logger->pushHandler(new StreamHandler($this->configs['logs_path'], Logger::DEBUG));
     }
 
     /**
@@ -43,7 +43,11 @@ class Database
     {
         $queryString = 'SELECT * FROM users WHERE username = :username';
         $result = $this->query($queryString, ['username' => $username]);
-        return $result->fetch() ?: null;
+        $result = $result->fetch();
+        if (!$result) {
+            $this->logger->err('Login error: user with username "' . $username . '" not found');
+        }
+        return $result ?: null;
     }
 
     /**
@@ -95,7 +99,7 @@ class Database
             }
             $statement->execute();
             $success = $this->db->commit();
-            $this->logger->info('transaction successful');
+            $this->logger->info('transaction successful', $params);
         } catch (\PDOException $e) {
             $this->db->rollBack();
             $this->logger->err('transaction error:' . $e->getMessage());
