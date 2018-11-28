@@ -17,9 +17,9 @@ class Auth
 
     public function __construct()
     {
-        $this->configs = Config::getConfigs();
+        $configs = Config::getConfigs();
         $this->logger = new Logger('name');
-        $this->logger->pushHandler(new StreamHandler($this->configs['logs_path'], Logger::DEBUG));
+        $this->logger->pushHandler(new StreamHandler($configs['logs_path'], Logger::DEBUG));
     }
 
     /**
