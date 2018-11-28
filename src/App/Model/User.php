@@ -119,20 +119,27 @@ class User
      */
     public function pullMoney(int $moneyToPull): bool
     {
-        // any money transfer stuff
-
         //record new money amount
-        $newMoneyAmount = $this->getMoneyAmount() - $moneyToPull;
+        $currentMoneyAmount = $this->getMoneyAmount();
+        $newMoneyAmount = $currentMoneyAmount - $moneyToPull;
 
-        $sql = 'UPDATE users SET money_amount = :money WHERE id = :id';
-        $params = [
+        //query to lock writing
+        $queryParamsArray = [];
+        $queryParamsArray[0]['sql'] = 'SELECT * FROM users WHERE id = :id FOR UPDATE;';
+        $queryParamsArray[0]['params'] = ['id' => $this->getId()];
+
+        // query to modify ("current_money_amount" check will block duplicating money pull)
+        $queryParamsArray[1]['sql'] = 'UPDATE users SET money_amount = :new_money_amount WHERE id = :id AND money_amount = :current_money_amount;';
+        $queryParamsArray[1]['params'] = [
             'id' => $this->getId(),
-            'money' => $newMoneyAmount
+            'new_money_amount' => $newMoneyAmount,
+            'current_money_amount' => $currentMoneyAmount
         ];
 
-        if ($this->db->transactionQuery($sql, $params)) {
+        if ($this->db->transactionQuery($queryParamsArray)) {
             // update user money amount in object
             $this->setMoneyAmount($newMoneyAmount);
+            // any money transfer stuff
             return true;
         }
 

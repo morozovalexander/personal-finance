@@ -58,26 +58,25 @@ class Database
     public function query($sql, $params = [])
     {
         $statement = $this->db->prepare($sql);
-        if (!empty($params)) {
-            foreach ($params as $key => $val) {
-                if (\is_int($val)) {
-                    $type = PDO::PARAM_INT;
-                } else {
-                    $type = PDO::PARAM_STR;
-                }
-                $statement->bindValue(':' . $key, $val, $type);
+
+        foreach ($params as $key => $val) {
+            if (\is_int($val)) {
+                $type = PDO::PARAM_INT;
+            } else {
+                $type = PDO::PARAM_STR;
             }
+            $statement->bindValue(':' . $key, $val, $type);
         }
+
         $statement->execute();
         return $statement;
     }
 
     /**
-     * @param string $sql
-     * @param array $params
+     * @param array //  sql + params
      * @return bool
      */
-    public function transactionQuery($sql, $params = []): bool
+    public function transactionQuery(array $queryParamsArray): bool
     {
         $success = false;
 
@@ -85,21 +84,26 @@ class Database
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             $this->db->beginTransaction();
-            /**
-             * @var \PDOStatement $statement
-             */
-            $statement = $this->db->prepare($sql);
-            foreach ($params as $key => $val) {
-                if (\is_int($val)) {
-                    $type = PDO::PARAM_INT;
-                } else {
-                    $type = PDO::PARAM_STR;
+            $debugParams = [];
+
+            foreach ($queryParamsArray as $queryParams) {
+                /** @var \PDOStatement $statement */
+                $statement = $this->db->prepare($queryParams['sql']);
+                foreach ($queryParams['params'] as $key => $val) {
+                    if (\is_int($val)) {
+                        $type = PDO::PARAM_INT;
+                    } else {
+                        $type = PDO::PARAM_STR;
+                    }
+                    $statement->bindValue(':' . $key, $val, $type);
                 }
-                $statement->bindValue(':' . $key, $val, $type);
+
+                $statement->execute();
+                $debugParams[] = $queryParams['params'];
             }
-            $statement->execute();
+
             $success = $this->db->commit();
-            $this->logger->info('transaction successful', $params);
+            $this->logger->info('transaction successful', $debugParams);
         } catch (\PDOException $e) {
             $this->db->rollBack();
             $this->logger->err('transaction error:' . $e->getMessage());
