@@ -4,11 +4,17 @@ namespace App\Model;
 
 class User
 {
+    /**
+     * @var Database
+     */
     private $db;
 
-    public function __construct()
+    /**
+     * @param Database $db
+     */
+    public function __construct(Database $db)
     {
-        $this->db = new Database();
+        $this->db = $db;
     }
 
     /**

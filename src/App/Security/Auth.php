@@ -15,8 +15,17 @@ class Auth
      */
     protected $logger;
 
-    public function __construct()
+    /**
+     * @var Database
+     */
+    protected $db;
+
+    /**
+     * @param Database $db
+     */
+    public function __construct(Database $db)
     {
+        $this->db = $db;
         $configs = Config::getConfigs();
         $this->logger = new Logger('name');
         $this->logger->pushHandler(new StreamHandler($configs['logs_path'], Logger::DEBUG));
@@ -42,9 +51,7 @@ class Auth
         $login = $_POST['login'];
         $password = $_POST['password'];
 
-        $db = new Database();
-
-        $userArray = $db->findUserArrayByUsername($login);
+        $userArray = $this->db->findUserArrayByUsername($login);
         if (!$userArray) {
             return null;
         }
@@ -57,7 +64,7 @@ class Auth
         $_SESSION['username'] = $login;
         session_write_close();
 
-        $userModel = new User();
+        $userModel = new User($this->db);
 
         return $userModel->getCurrentUser();
     }
