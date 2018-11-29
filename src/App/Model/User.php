@@ -5,19 +5,6 @@ namespace App\Model;
 class User
 {
     /**
-     * @var Database
-     */
-    private $db;
-
-    /**
-     * @param Database $db
-     */
-    public function __construct(Database $db)
-    {
-        $this->db = $db;
-    }
-
-    /**
      * @var int
      */
     protected $id;
@@ -56,11 +43,27 @@ class User
     }
 
     /**
+     * @param int $id
+     */
+    public function setId(int $id): void
+    {
+        $this->id = $id;
+    }
+
+    /**
      * @return string
      */
     public function getUsername(): string
     {
         return $this->username;
+    }
+
+    /**
+     * @param string $username
+     */
+    public function setUsername(string $username): void
+    {
+        $this->username = $username;
     }
 
     /**
@@ -80,11 +83,27 @@ class User
     }
 
     /**
+     * @param string $firstName
+     */
+    public function setFirstName(string $firstName): void
+    {
+        $this->firstName = $firstName;
+    }
+
+    /**
      * @return string
      */
     public function getLastName(): string
     {
         return $this->lastName;
+    }
+
+    /**
+     * @param string $lastName
+     */
+    public function setLastName(string $lastName): void
+    {
+        $this->lastName = $lastName;
     }
 
     /**
@@ -101,54 +120,5 @@ class User
     public function setMoneyAmount(int $moneyAmount): void
     {
         $this->moneyAmount = $moneyAmount;
-    }
-
-    /**
-     * @return User $this
-     */
-    public function getCurrentUser(): User
-    {
-        $userDataArray = $this->db->findUserArrayByUsername($_SESSION['username']);
-
-        $this->id = $userDataArray['id'];
-        $this->username = $userDataArray['username'];
-        $this->firstName = $userDataArray['firstname'];
-        $this->lastName = $userDataArray['lastname'];
-        $this->moneyAmount = $userDataArray['money_amount'];
-
-        return $this;
-    }
-
-    /**
-     * @param int $moneyToPull
-     * @return bool|\PDOStatement
-     */
-    public function pullMoney(int $moneyToPull): bool
-    {
-        //record new money amount
-        $currentMoneyAmount = $this->getMoneyAmount();
-        $newMoneyAmount = $currentMoneyAmount - $moneyToPull;
-
-        //query to lock writing
-        $queryParamsArray = [];
-        $queryParamsArray[0]['sql'] = 'SELECT * FROM users WHERE id = :id FOR UPDATE;';
-        $queryParamsArray[0]['params'] = ['id' => $this->getId()];
-
-        // query to modify ("current_money_amount" check will block duplicating money pull)
-        $queryParamsArray[1]['sql'] = 'UPDATE users SET money_amount = :new_money_amount WHERE id = :id AND money_amount = :current_money_amount;';
-        $queryParamsArray[1]['params'] = [
-            'id' => $this->getId(),
-            'new_money_amount' => $newMoneyAmount,
-            'current_money_amount' => $currentMoneyAmount
-        ];
-
-        if ($this->db->transactionQuery($queryParamsArray)) {
-            // update user money amount in object
-            $this->setMoneyAmount($newMoneyAmount);
-            // any money transfer stuff
-            return true;
-        }
-
-        return false;
     }
 }

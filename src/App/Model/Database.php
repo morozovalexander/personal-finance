@@ -36,21 +36,6 @@ class Database
     }
 
     /**
-     * @param string $username
-     * @return array
-     */
-    public function findUserArrayByUsername(string $username): ?array
-    {
-        $queryString = 'SELECT * FROM users WHERE username = :username';
-        $result = $this->query($queryString, ['username' => $username]);
-        $result = $result->fetch();
-        if (!$result) {
-            $this->logger->err('Login error: user with username "' . $username . '" not found');
-        }
-        return $result ?: null;
-    }
-
-    /**
      * @param string $sql
      * @param array $params
      * @return bool|\PDOStatement

@@ -4,6 +4,7 @@ namespace App\Security;
 
 use App\Model\Database;
 use App\Model\User;
+use App\Model\UserMapper;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use App\Config\Config;
@@ -51,22 +52,23 @@ class Auth
         $login = $_POST['login'];
         $password = $_POST['password'];
 
-        $userArray = $this->db->findUserArrayByUsername($login);
-        if (!$userArray) {
+        $userMapper = new UserMapper($this->db);
+        $user = $userMapper->findUserByUsername($login);
+
+        if (!$user) {
+            $this->logger->err('Login error: user with username "' . $login . '" not found');
             return null;
         }
         $this->logger->info('User with username "' . $login . '" logged in');
 
-        if (!password_verify($password, $userArray['password'])) {
+        if (!password_verify($password, $userMapper->getUserPassword($user))) {
             return null;
         }
 
         $_SESSION['username'] = $login;
         session_write_close();
 
-        $userModel = new User($this->db);
-
-        return $userModel->getCurrentUser();
+        return $user;
     }
 
     public function logoutUser(): void

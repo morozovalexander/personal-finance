@@ -6,6 +6,7 @@ use App\Security\Auth;
 use App\Model\User;
 use App\Service\MoneyService;
 use App\Model\Database;
+use App\Model\UserMapper;
 
 chdir(dirname(__DIR__));
 require 'vendor/autoload.php';
@@ -28,9 +29,8 @@ if (($requestedUriArray[0] !== 'login') && !Auth::checkAuthorisation()) {
 switch ($requestedUriArray[0]) {
     case '':
     case 'home':
-        $userModel = new User($db);
-        $user = $userModel->getCurrentUser();
-        $view = new ProfileView($user);
+        $userMapper = new UserMapper($db);
+        $view = new ProfileView($userMapper->getCurrentUser());
         break;
     case 'login':
         if ('GET' === $_SERVER['REQUEST_METHOD']) {
@@ -44,10 +44,10 @@ switch ($requestedUriArray[0]) {
         if ('GET' === $_SERVER['REQUEST_METHOD']) {
             header('Location: /home');
         }
-        $userModel = new User($db);
-        $moneyService = new MoneyService($userModel->getCurrentUser());
+        $userMapper = new UserMapper($db);
+        $moneyService = new MoneyService($userMapper->getCurrentUser(), $db);
         $pullMoneyResult = $moneyService->pullMoney();
-        $view = new ProfileView($userModel, $pullMoneyResult['message']);
+        $view = new ProfileView($userMapper->getCurrentUser(), $pullMoneyResult['message']);
         break;
     case 'logout':
         $auth->logoutUser();

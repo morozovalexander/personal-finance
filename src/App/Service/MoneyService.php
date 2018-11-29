@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
+use App\Model\Database;
 use App\Model\User;
+use App\Model\UserMapper;
 
 class MoneyService
 {
@@ -12,16 +14,23 @@ class MoneyService
     protected $user;
 
     /**
+     * @var Database
+     */
+    protected $db;
+
+    /**
      * @var string
      */
     protected $validationMessage;
 
     /**
      * @param User $user
+     * @param Database $db
      */
-    public function __construct(User $user)
+    public function __construct(User $user, Database $db)
     {
         $this->user = $user;
+        $this->db = $db;
     }
 
     /**
@@ -47,7 +56,9 @@ class MoneyService
             return $returnArr;
         }
 
-        if ($this->user->pullMoney($moneyToPull)){
+        $userMapper = new UserMapper($this->db);
+
+        if ($userMapper->pullMoney($this->user, $moneyToPull)){
             $returnArr['success'] = true;
             $returnArr['message'] = 'Successful transaction';
         } else {
@@ -57,12 +68,11 @@ class MoneyService
         return $returnArr;
     }
 
-
     /**
      * @param int $moneyToPull
      * @return bool
      */
-    protected function validateMoneyToPull(int $moneyToPull)
+    protected function validateMoneyToPull(int $moneyToPull): bool
     {
         $currentMoneyAmount = $this->user->getMoneyAmount();
 
@@ -80,7 +90,6 @@ class MoneyService
             $this->validationMessage = 'You have not enough money to pull';
             return false;
         }
-
 
         return true;
     }
