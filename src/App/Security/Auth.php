@@ -37,6 +37,7 @@ class Auth
      */
     public static function checkAuthorisation(): bool
     {
+        session_write_close();
         return (isset($_SESSION['username']) && (trim($_SESSION['username']) !== ''));
     }
 

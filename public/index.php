@@ -19,12 +19,12 @@ $auth = new Auth($db);
 $requestUriPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestedUriArray = explode('/', trim($requestUriPath, '/'));
 
-$view = new LoginView();
-
 if (($requestedUriArray[0] !== 'login') && !Auth::checkAuthorisation()) {
-    echo $view->render();
-    die;
+    header('Location: /login');
+    exit;
 }
+
+$view = new LoginView();
 
 switch ($requestedUriArray[0]) {
     case '':
@@ -36,6 +36,7 @@ switch ($requestedUriArray[0]) {
         break;
     case 'login':
         if ('GET' === $_SERVER['REQUEST_METHOD']) {
+            session_write_close();
             $view = new LoginView();
         } elseif ('POST' === $_SERVER['REQUEST_METHOD']) {
             $user = $auth->authenticateUser();
@@ -53,7 +54,8 @@ switch ($requestedUriArray[0]) {
         break;
     case 'logout':
         $auth->logoutUser();
-        $view = new LoginView();
+        header('Location: /login');
+        exit;
         break;
 }
 
