@@ -75,5 +75,6 @@ class Auth
     {
         $this->logger->info('User with username "' . $_SESSION['username'] . '" logged out');
         unset($_SESSION['username']);
+        session_regenerate_id(true);
     }
 }
