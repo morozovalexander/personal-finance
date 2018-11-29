@@ -3,9 +3,8 @@
 use App\Views\LoginView;
 use App\Views\ProfileView;
 use App\Security\Auth;
-use App\Model\User;
 use App\Service\MoneyService;
-use App\Model\Database;
+use App\Service\Database;
 use App\Model\UserMapper;
 
 chdir(dirname(__DIR__));

@@ -4,6 +4,9 @@ namespace App\Views;
 
 class LoginView
 {
+    /**
+     * @return string
+     */
     public function render(): string
     {
         return <<<EOT

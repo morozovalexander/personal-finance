@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Model;
+namespace App\Service;
 
 use PDO;
 use Monolog\Logger;

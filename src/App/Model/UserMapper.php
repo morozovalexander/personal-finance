@@ -2,6 +2,8 @@
 
 namespace App\Model;
 
+use App\Service\Database;
+
 class UserMapper
 {
     /**

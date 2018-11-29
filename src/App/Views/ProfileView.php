@@ -11,20 +11,26 @@ class ProfileView
      */
     private $user;
 
+    /**
+     * @var string
+     */
     private $message;
 
-    public function __construct(User $user, $message = '')
+    /**
+     * ProfileView constructor.
+     * @param User $user
+     * @param string $message
+     */
+    public function __construct(User $user, string $message = '')
     {
         $this->user = $user;
         $this->message = $message;
     }
 
-//    public function renderTitle()
-//    {
-//        return sprintf("<h1>%s</h1>", $this->post->getTitle());
-//    }
-
-    public function render()
+    /**
+     * @return string
+     */
+    public function render(): string
     {
         return <<<EOT
 <!doctype html>

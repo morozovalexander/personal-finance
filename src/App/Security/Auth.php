@@ -2,7 +2,7 @@
 
 namespace App\Security;
 
-use App\Model\Database;
+use App\Service\Database;
 use App\Model\User;
 use App\Model\UserMapper;
 use Monolog\Logger;
