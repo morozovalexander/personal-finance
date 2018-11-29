@@ -105,20 +105,4 @@ class User
     {
         $this->lastName = $lastName;
     }
-
-    /**
-     * @return int
-     */
-    public function getMoneyAmount(): int
-    {
-        return $this->moneyAmount;
-    }
-
-    /**
-     * @param int $moneyAmount
-     */
-    public function setMoneyAmount(int $moneyAmount): void
-    {
-        $this->moneyAmount = $moneyAmount;
-    }
 }

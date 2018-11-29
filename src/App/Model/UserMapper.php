@@ -35,9 +35,22 @@ class UserMapper
     {
         $queryString = 'SELECT password FROM users WHERE id = :id';
         $result = $this->db->query($queryString, ['id' => $user->getId()]);
-        $userDataArray = $result->fetch();
+        $userDataArray = $result->fetch(\PDO::FETCH_ASSOC);
 
         return $userDataArray['password'] ?? null;
+    }
+
+    /**
+     * @param User $user
+     * @return int|null
+     */
+    public function getUserRublesAmount(User $user): ?int
+    {
+        $queryString = 'SELECT money_amount FROM ruble_wallet WHERE user_id = :id';
+        $result = $this->db->query($queryString, ['id' => $user->getId()]);
+        $walletArray = $result->fetch(\PDO::FETCH_ASSOC);
+
+        return $walletArray['money_amount'] ?? null;
     }
 
     /**
@@ -58,7 +71,6 @@ class UserMapper
         $user->setUsername($userDataArray['username']);
         $user->setFirstName($userDataArray['firstname']);
         $user->setLastName($userDataArray['lastname']);
-        $user->setMoneyAmount($userDataArray['money_amount']);
 
         return $user;
     }
@@ -71,7 +83,7 @@ class UserMapper
     {
         $queryString = 'SELECT * FROM users WHERE username = :username';
         $result = $this->db->query($queryString, ['username' => $username]);
-        $userDataArray = $result->fetch();
+        $userDataArray = $result->fetch(\PDO::FETCH_ASSOC);
 
         return $userDataArray ?: null;
     }
@@ -84,26 +96,25 @@ class UserMapper
     public function pullMoney(User $user, int $moneyToPull): bool
     {
         //record new money amount
-        $currentMoneyAmount = $user->getMoneyAmount();
+        $currentMoneyAmount = $this->getUserRublesAmount($user);
         $newMoneyAmount = $currentMoneyAmount - $moneyToPull;
+        $userId = $user->getId();
 
         //query to lock writing
         $queryParamsArray = [];
-        $queryParamsArray[0]['sql'] = 'SELECT * FROM users WHERE id = :id FOR UPDATE;';
-        $queryParamsArray[0]['params'] = ['id' => $user->getId()];
+
+        $queryParamsArray[0]['sql'] = 'SELECT * FROM ruble_wallet WHERE user_id = :id FOR UPDATE;';
+        $queryParamsArray[0]['params'] = ['id' => $userId];
 
         // query to modify ("current_money_amount" check will block duplicating money pull)
-        $queryParamsArray[1]['sql'] = 'UPDATE users SET money_amount = :new_money_amount WHERE id = :id AND money_amount = :current_money_amount;';
+        $queryParamsArray[1]['sql'] = 'UPDATE ruble_wallet SET money_amount = :new_money_amount WHERE user_id = :id AND money_amount = :current_money_amount;';
         $queryParamsArray[1]['params'] = [
-            'id' => $user->getId(),
+            'id' => $userId,
             'new_money_amount' => $newMoneyAmount,
             'current_money_amount' => $currentMoneyAmount
         ];
 
         if ($this->db->transactionQuery($queryParamsArray)) {
-            // update user money amount in object
-            $user->setMoneyAmount($newMoneyAmount);
-            // any money transfer stuff
             return true;
         }
 

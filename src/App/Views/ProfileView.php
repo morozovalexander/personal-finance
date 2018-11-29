@@ -17,13 +17,19 @@ class ProfileView
     private $message;
 
     /**
-     * ProfileView constructor.
+     * @var int
+     */
+    private $rublesAmount;
+
+    /**
      * @param User $user
+     * @param int $rublesAmount
      * @param string $message
      */
-    public function __construct(User $user, string $message = '')
+    public function __construct(User $user, int $rublesAmount = 0, string $message = '')
     {
         $this->user = $user;
+        $this->rublesAmount = number_format($rublesAmount / 100, 2);
         $this->message = $message;
     }
 
@@ -75,17 +81,16 @@ class ProfileView
     <div class="starter-template">
         <h1>User profile</h1>
         <p class="lead">Username: {$this->user->getUsername()}</p>
-        <p class="lead">FirstName: {$this->user->getFirstName()}</p>
-        <p class="lead">LastName: {$this->user->getLastName()}</p>
-        <p class="lead">MoneyAmount: {$this->user->getMoneyAmount()}</p>
+        <p class="lead">Name: {$this->user->getFirstName()} {$this->user->getLastName()}</p>
+        <p class="lead">Current rubles amount: {$this->rublesAmount}</p>
     </div>
     
     <div class="row justify-content-md-center">
         <div class="col-md-auto">
             <form action="/pull_money" method="POST">
                  <div class="form-group">
-                        <label for="money-amount-input">Money amount</label>
-                        <input name="money-amount" type="number" class="form-control" id="money-amount-input" placeholder="0">
+                        <label for="money-amount-input">Rubles amount to pull:</label>
+                        <input name="money-amount" type="number" step="0.01" class="form-control" id="money-amount-input" placeholder="0">
                  </div>
                  <button class="btn btn-lg btn-primary btn-block" type="submit">Pull out</button>
             </form>

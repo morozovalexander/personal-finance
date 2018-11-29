@@ -42,22 +42,22 @@ class MoneyService
             'message' => 'success'
         ];
 
-
         if (!isset($_POST['money-amount'])) {
             $returnArr['message'] = 'Invalid money amount';
             return $returnArr;
         }
 
-        $moneyToPull = (int)$_POST['money-amount'];
+        $moneyToPull = (float)$_POST['money-amount'];
 
-        if (!$this->validateMoneyToPull($moneyToPull)) {
+        if (!$this->validateRublesAmountToPull($moneyToPull)) {
             $returnArr['message'] = $this->validationMessage;
             return $returnArr;
         }
 
+        $moneyToPull = (int)($moneyToPull * 100);
         $userMapper = new UserMapper($this->db);
 
-        if ($userMapper->pullMoney($this->user, $moneyToPull)){
+        if ($userMapper->pullMoney($this->user, $moneyToPull)) {
             $returnArr['success'] = true;
             $returnArr['message'] = 'Successful transaction';
         } else {
@@ -68,17 +68,28 @@ class MoneyService
     }
 
     /**
-     * @param int $moneyToPull
+     * @param float $floatMoneyToPull
      * @return bool
      */
-    protected function validateMoneyToPull(int $moneyToPull): bool
+    protected function validateRublesAmountToPull(float $floatMoneyToPull): bool
     {
-        $currentMoneyAmount = $this->user->getMoneyAmount();
+        $userMapper = new UserMapper($this->db);
+        $currentMoneyAmount = $userMapper->getUserRublesAmount($this->user);
+
+        $rawMoneyAsString = '' . $floatMoneyToPull;
+        $explodedMoney = explode('.', $rawMoneyAsString);
+
+        if (isset($explodedMoney[1]) && \strlen($explodedMoney[1]) > 2) {
+            $this->validationMessage = 'Invalid decimal symbol quantity';
+            return false;
+        }
 
         if (0 === $currentMoneyAmount) {
             $this->validationMessage = 'You have no money available';
             return false;
         }
+
+        $moneyToPull = (int)($floatMoneyToPull * 100);
 
         if ($moneyToPull <= 0) {
             $this->validationMessage = 'Money amount input is invalid';

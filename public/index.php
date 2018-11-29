@@ -12,6 +12,7 @@ require 'vendor/autoload.php';
 
 session_start();
 $db = new Database();
+$userMapper = new UserMapper($db);
 $auth = new Auth($db);
 
 // url parsing
@@ -28,25 +29,27 @@ if (($requestedUriArray[0] !== 'login') && !Auth::checkAuthorisation()) {
 switch ($requestedUriArray[0]) {
     case '':
     case 'home':
-        $userMapper = new UserMapper($db);
-        $view = new ProfileView($userMapper->getCurrentUser());
+        $view = new ProfileView(
+            $userMapper->getCurrentUser(),
+            $userMapper->getUserRublesAmount($userMapper->getCurrentUser())
+        );
         break;
     case 'login':
         if ('GET' === $_SERVER['REQUEST_METHOD']) {
             $view = new LoginView();
         } elseif ('POST' === $_SERVER['REQUEST_METHOD']) {
             $user = $auth->authenticateUser();
-            $view = $user ? new ProfileView($user) : new LoginView(); // login form or profile if login success
+            $view = $user ? new ProfileView($user, $userMapper->getUserRublesAmount($user)) : new LoginView(); // login form or profile if login success
         }
         break;
     case 'pull_money':
         if ('GET' === $_SERVER['REQUEST_METHOD']) {
             header('Location: /home');
         }
-        $userMapper = new UserMapper($db);
         $moneyService = new MoneyService($userMapper->getCurrentUser(), $db);
         $pullMoneyResult = $moneyService->pullMoney();
-        $view = new ProfileView($userMapper->getCurrentUser(), $pullMoneyResult['message']);
+        $rublesAmount = $userMapper->getUserRublesAmount($userMapper->getCurrentUser());
+        $view = new ProfileView($userMapper->getCurrentUser(), $rublesAmount, $pullMoneyResult['message']);
         break;
     case 'logout':
         $auth->logoutUser();
