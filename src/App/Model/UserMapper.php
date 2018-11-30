@@ -107,7 +107,8 @@ class UserMapper
         $queryParamsArray[0]['params'] = ['id' => $userId];
 
         // query to modify ("current_money_amount" check will block duplicating money pull)
-        $queryParamsArray[1]['sql'] = 'UPDATE ruble_wallet SET money_amount = :new_money_amount WHERE user_id = :id AND money_amount = :current_money_amount;';
+        $queryParamsArray[1]['sql'] = 'UPDATE ruble_wallet SET money_amount = :new_money_amount '
+            . 'WHERE user_id = :id AND money_amount = :current_money_amount;';
         $queryParamsArray[1]['params'] = [
             'id' => $userId,
             'new_money_amount' => $newMoneyAmount,
