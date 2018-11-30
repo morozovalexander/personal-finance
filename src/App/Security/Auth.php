@@ -60,14 +60,15 @@ class Auth
             $this->logger->err('Login error: user with username "' . $login . '" not found');
             return null;
         }
-        $this->logger->info('User with username "' . $login . '" logged in');
 
         if (!password_verify($password, $userMapper->getUserPassword($user))) {
+            $this->logger->info('Login error: wrong password for user with username "' . $login);
             return null;
         }
 
         $_SESSION['username'] = $login;
         session_write_close();
+        $this->logger->info('User with username "' . $login . '" logged in');
 
         return $user;
     }
