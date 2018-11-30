@@ -42,15 +42,18 @@ class UserMapper
 
     /**
      * @param User $user
-     * @return int|null
+     * @return array|null
      */
-    public function getUserRublesAmount(User $user): ?int
+    public function getUserRublesWallet(User $user): ?array
     {
-        $queryString = 'SELECT money_amount FROM ruble_wallet WHERE user_id = :id';
-        $result = $this->db->query($queryString, ['id' => $user->getId()]);
+        $queryString = 'SELECT w.money_amount, c.prec FROM wallet AS w '
+            . 'INNER JOIN currency AS c ON c.id = w.currency_id '
+            . 'WHERE user_id = :id AND c.name = :currency';
+
+        $result = $this->db->query($queryString, ['id' => $user->getId(), 'currency' => 'rubles']);
         $walletArray = $result->fetch(\PDO::FETCH_ASSOC);
 
-        return $walletArray['money_amount'] ?? null;
+        return $walletArray['money_amount'] ? $walletArray :  null;
     }
 
     /**
@@ -96,7 +99,8 @@ class UserMapper
     public function pullMoney(User $user, int $moneyToPull): bool
     {
         //record new money amount
-        $currentMoneyAmount = $this->getUserRublesAmount($user);
+        $rublesWallet = $this->getUserRublesWallet($user);
+        $currentMoneyAmount = $rublesWallet['money_amount'] ?? 0;
         $newMoneyAmount = $currentMoneyAmount - $moneyToPull;
         $userId = $user->getId();
 

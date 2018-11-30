@@ -23,13 +23,22 @@ class ProfileView
 
     /**
      * @param User $user
-     * @param int $rublesAmount
+     * @param array $rublesWallet
      * @param string $message
      */
-    public function __construct(User $user, int $rublesAmount = 0, string $message = '')
+    public function __construct(User $user, array $rublesWallet = [], string $message = '')
     {
         $this->user = $user;
-        $this->rublesAmount = number_format($rublesAmount / 100, 2);
+
+        $this->rublesAmount = 0;
+        if ($rublesWallet['money_amount']) {
+            $precision = $rublesWallet['prec'];
+            $this->rublesAmount = number_format(
+                $rublesWallet['money_amount'] / (10 ** $precision),
+                $precision
+            );
+        }
+
         $this->message = $message;
     }
 

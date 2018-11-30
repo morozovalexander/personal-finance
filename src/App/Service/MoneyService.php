@@ -74,7 +74,8 @@ class MoneyService
     protected function validateRublesAmountToPull(float $floatMoneyToPull): bool
     {
         $userMapper = new UserMapper($this->db);
-        $currentMoneyAmount = $userMapper->getUserRublesAmount($this->user);
+        $rublesWallet = $userMapper->getUserRublesWallet($this->user);
+        $currentMoneyAmount = $rublesWallet['money_amount'] ?? 0;
 
         $rawMoneyAsString = '' . $floatMoneyToPull;
         $explodedMoney = explode('.', $rawMoneyAsString);

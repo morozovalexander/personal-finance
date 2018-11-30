@@ -31,7 +31,7 @@ switch ($requestedUriArray[0]) {
     case 'home':
         $view = new ProfileView(
             $userMapper->getCurrentUser(),
-            $userMapper->getUserRublesAmount($userMapper->getCurrentUser())
+            $userMapper->getUserRublesWallet($userMapper->getCurrentUser())
         );
         break;
     case 'login':
@@ -40,7 +40,7 @@ switch ($requestedUriArray[0]) {
             $view = new LoginView();
         } elseif ('POST' === $_SERVER['REQUEST_METHOD']) {
             $user = $auth->authenticateUser();
-            $view = $user ? new ProfileView($user, $userMapper->getUserRublesAmount($user)) : new LoginView(); // login form or profile if login success
+            $view = $user ? new ProfileView($user, $userMapper->getUserRublesWallet($user)) : new LoginView();
         }
         break;
     case 'pull_money':
@@ -49,7 +49,7 @@ switch ($requestedUriArray[0]) {
         }
         $moneyService = new MoneyService($userMapper->getCurrentUser(), $db);
         $pullMoneyResult = $moneyService->pullMoney();
-        $rublesAmount = $userMapper->getUserRublesAmount($userMapper->getCurrentUser());
+        $rublesAmount = $userMapper->getUserRublesWallet($userMapper->getCurrentUser());
         $view = new ProfileView($userMapper->getCurrentUser(), $rublesAmount, $pullMoneyResult['message']);
         break;
     case 'logout':
