@@ -46,8 +46,8 @@ class UserMapper
      */
     public function getUserRublesWallet(User $user): ?array
     {
-        $queryString = 'SELECT w.money_amount, c.prec FROM wallet AS w '
-            . 'INNER JOIN currency AS c ON c.id = w.currency_id '
+        $queryString = 'SELECT w.money_amount, c.prec FROM wallet w '
+            . 'INNER JOIN currency c ON c.id = w.currency_id '
             . 'WHERE user_id = :id AND c.name = :currency';
 
         $result = $this->db->query($queryString, ['id' => $user->getId(), 'currency' => 'rubles']);
@@ -107,16 +107,24 @@ class UserMapper
         //query to lock writing
         $queryParamsArray = [];
 
-        $queryParamsArray[0]['sql'] = 'SELECT * FROM ruble_wallet WHERE user_id = :id FOR UPDATE;';
-        $queryParamsArray[0]['params'] = ['id' => $userId];
+        $queryParamsArray[0]['sql'] = 'SELECT money_amount FROM wallet w '
+            . 'INNER JOIN users u ON w.user_id = u.id '
+            . 'INNER JOIN currency c ON w.currency_id = c.id '
+            . 'WHERE u.id = :id AND c.name = :currency FOR UPDATE;';
+        $queryParamsArray[0]['params'] = ['id' => $userId, 'currency' => 'rubles'];
 
-        // query to modify ("current_money_amount" check will block duplicating money pull)
-        $queryParamsArray[1]['sql'] = 'UPDATE ruble_wallet SET money_amount = :new_money_amount '
-            . 'WHERE user_id = :id AND money_amount = :current_money_amount;';
+        // query to modify ("money_amount" check will block duplicating money pull)
+
+        $queryParamsArray[1]['sql'] = 'UPDATE wallet w '
+            . 'INNER JOIN users u ON w.user_id = u.id '
+            . 'INNER JOIN currency c ON w.currency_id = c.id '
+            . 'SET w.money_amount = :new_money_amount '
+            . 'WHERE u.id = :id AND c.name = :currency AND w.money_amount = :current_money_amount;';
         $queryParamsArray[1]['params'] = [
             'id' => $userId,
             'new_money_amount' => $newMoneyAmount,
-            'current_money_amount' => $currentMoneyAmount
+            'current_money_amount' => $currentMoneyAmount,
+            'currency' => 'rubles'
         ];
 
         if ($this->db->transactionQuery($queryParamsArray)) {
