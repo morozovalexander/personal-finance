@@ -12,7 +12,7 @@ class Database
     /**
      * @var PDO
      */
-    protected $db;
+    protected $pdo;
 
     /**
      * @var Logger
@@ -27,7 +27,7 @@ class Database
     public function __construct()
     {
         $this->configs = Config::getConfigs();
-        $this->db = new PDO('mysql:host=' . $this->configs['dbhost'] . ';dbname=' . $this->configs['dbname'],
+        $this->pdo = new PDO('mysql:host=' . $this->configs['dbhost'] . ';dbname=' . $this->configs['dbname'],
             $this->configs['dbuser'],
             $this->configs['dbpass']
         );
@@ -42,7 +42,7 @@ class Database
      */
     public function query($sql, $params = [])
     {
-        $statement = $this->db->prepare($sql);
+        $statement = $this->pdo->prepare($sql);
 
         foreach ($params as $key => $val) {
             if (\is_int($val)) {
@@ -66,14 +66,14 @@ class Database
         $success = false;
 
         try {
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-            $this->db->beginTransaction();
+            $this->pdo->beginTransaction();
             $debugParams = [];
 
             foreach ($queryParamsArray as $queryParams) {
                 /** @var \PDOStatement $statement */
-                $statement = $this->db->prepare($queryParams['sql']);
+                $statement = $this->pdo->prepare($queryParams['sql']);
                 foreach ($queryParams['params'] as $key => $val) {
                     if (\is_int($val)) {
                         $type = PDO::PARAM_INT;
@@ -87,13 +87,55 @@ class Database
                 $debugParams[] = $queryParams['params'];
             }
 
-            $success = $this->db->commit();
+            $success = $this->pdo->commit();
             $this->logger->info('transaction successful', $debugParams);
         } catch (\PDOException $e) {
-            $this->db->rollBack();
+            $this->pdo->rollBack();
             $this->logger->err('transaction error:' . $e->getMessage());
         }
 
         return $success;
+    }
+
+    /**
+     * @param string $message
+     * @param array $params
+     */
+    public function logInfo(string $message, array $params = []):void
+    {
+        $this->logger->info($message, $params);
+    }
+
+    /**
+     * @param string $message
+     * @param array $params
+     */
+    public function logErr(string $message, array $params = []):void
+    {
+        $this->logger->err($message, $params);
+    }
+
+    public function beginTransaction(): void
+    {
+        $this->pdo->beginTransaction();
+    }
+
+    public function commit(): void
+    {
+        $this->pdo->commit();
+    }
+
+    public function rollback(): void
+    {
+        $this->pdo->rollBack();
+    }
+
+    /**
+     * @param int $attr
+     * @param mixed $value
+     */
+    public function setAttribute(int $attr, $value): void
+    {
+        $this->pdo->setAttribute($attr, $value);
     }
 }
