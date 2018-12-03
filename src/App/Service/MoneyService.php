@@ -35,11 +35,11 @@ class MoneyService
     /**
      * @return array
      */
-    public function pullMoney(): array
+    public function pullMoneyWithCheckInTransaction(): array
     {
         $returnArr = [
             'success' => false,
-            'message' => 'success'
+            'message' => 'error'
         ];
 
         if (!isset($_POST['money-amount'])) {
@@ -47,20 +47,65 @@ class MoneyService
             return $returnArr;
         }
 
-        $moneyToPull = (float)$_POST['money-amount'];
+        // begin transaction, lock row while reading current value
+        $userId = $this->user->getId();
 
-        if (!$this->validateRublesAmountToPull($moneyToPull)) {
-            $returnArr['message'] = $this->validationMessage;
-            return $returnArr;
-        }
+        try {
+            // query to lock writing
+            $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $this->db->beginTransaction();
 
-        $moneyToPull = (int)($moneyToPull * 100);
-        $userMapper = new UserMapper($this->db);
+            $selectAmountWithLockSql = 'SELECT w.money_amount, c.prec FROM wallet w '
+                . 'INNER JOIN users u ON w.user_id = u.id '
+                . 'INNER JOIN currency c ON w.currency_id = c.id '
+                . 'WHERE u.id = :id AND c.name = :currency FOR UPDATE;';
+            $selectAmountWithLockSqlParams = ['id' => $userId, 'currency' => 'rubles'];
+            $currMoneyArray = $this->db->query($selectAmountWithLockSql, $selectAmountWithLockSqlParams)->fetch();
 
-        if ($userMapper->pullMoney($this->user, $moneyToPull)) {
+            $currentAmount = (int)$currMoneyArray['money_amount'];
+            $precision = $currMoneyArray['prec'];
+
+            // money amounts validation
+            if (!$this->validateMoneyAmountToPull($currentAmount, $precision, $_POST['money-amount'])) {
+                $this->db->rollback();
+                $returnArr['message'] = $this->validationMessage;
+                return $returnArr;
+            }
+
+            // new amount calculation
+            $moneyToPull = $this->parseIntegerMoneyToPull($_POST['money-amount'], $precision);
+            $newMoneyAmount = $currentAmount - $moneyToPull;
+
+            // update wallet money amount
+            $updateUserWalletSql = 'UPDATE wallet w '
+                . 'INNER JOIN users u ON w.user_id = u.id '
+                . 'INNER JOIN currency c ON w.currency_id = c.id '
+                . 'SET w.money_amount = :new_money_amount '
+                . 'WHERE u.id = :id AND c.name = :currency AND w.money_amount = :current_money_amount;';
+            $updateUserWalletParams = [
+                'id' => $userId,
+                'new_money_amount' => $newMoneyAmount,
+                'current_money_amount' => $currentAmount,
+                'currency' => 'rubles'
+            ];
+
+            $updateResult = $this->db->query($updateUserWalletSql, $updateUserWalletParams);
+            if ($updateResult) {
+                $this->db->commit();
+                $this->db->logInfo('transaction successful', $updateUserWalletParams);
+            } else {
+                $this->db->rollback();
+                $this->db->logErr(
+                    'transaction error: ',
+                    array_merge($updateUserWalletParams, ['error' => $updateResult->errorInfo()])
+                );
+            }
+
             $returnArr['success'] = true;
             $returnArr['message'] = 'Successful transaction';
-        } else {
+        } catch (\PDOException $e) {
+            $this->db->rollback();
+            $this->db->logErr('transaction error: ' . $e->getMessage());
             $returnArr['message'] = 'Database error';
         }
 
@@ -68,19 +113,20 @@ class MoneyService
     }
 
     /**
-     * @param float $floatMoneyToPull
+     * @param int $currentMoneyAmount
+     * @param int $precision
+     * @param string $stringMoneyToPull
      * @return bool
      */
-    protected function validateRublesAmountToPull(float $floatMoneyToPull): bool
+    protected function validateMoneyAmountToPull(
+        int $currentMoneyAmount,
+        int $precision = 0,
+        string $stringMoneyToPull = ''
+    ): bool
     {
-        $userMapper = new UserMapper($this->db);
-        $rublesWallet = $userMapper->getUserRublesWallet($this->user);
-        $currentMoneyAmount = $rublesWallet['money_amount'] ?? 0;
-
-        $rawMoneyAsString = '' . $floatMoneyToPull;
-        $explodedMoney = explode('.', $rawMoneyAsString);
-
-        if (isset($explodedMoney[1]) && \strlen($explodedMoney[1]) > 2) {
+        // check fails if precision less than digits quantity after decimal point
+        $explodedMoney = explode('.', $stringMoneyToPull);
+        if (isset($explodedMoney[1]) && \strlen($explodedMoney[1]) > $precision) {
             $this->validationMessage = 'Invalid decimal symbol quantity';
             return false;
         }
@@ -90,7 +136,12 @@ class MoneyService
             return false;
         }
 
-        $moneyToPull = (int)($floatMoneyToPull * 100);
+        if ('' === $stringMoneyToPull) {
+            $this->validationMessage = 'Invalid money amount';
+            return false;
+        }
+
+        $moneyToPull = $this->parseIntegerMoneyToPull($stringMoneyToPull, $precision);
 
         if ($moneyToPull <= 0) {
             $this->validationMessage = 'Money amount input is invalid';
@@ -103,5 +154,15 @@ class MoneyService
         }
 
         return true;
+    }
+
+    /**
+     * @param string $postValue
+     * @param int $precision
+     * @return int
+     */
+    protected function parseIntegerMoneyToPull(string $postValue, int $precision): int
+    {
+        return (int)($postValue * (10 ** $precision));
     }
 }

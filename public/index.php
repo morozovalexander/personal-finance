@@ -48,7 +48,7 @@ switch ($requestedUriArray[0]) {
             header('Location: /home');
         }
         $moneyService = new MoneyService($userMapper->getCurrentUser(), $db);
-        $pullMoneyResult = $moneyService->pullMoney();
+        $pullMoneyResult = $moneyService->pullMoneyWithCheckInTransaction();
         $rublesAmount = $userMapper->getUserRublesWallet($userMapper->getCurrentUser());
         $view = new ProfileView($userMapper->getCurrentUser(), $rublesAmount, $pullMoneyResult['message']);
         break;
