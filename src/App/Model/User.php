@@ -30,11 +30,6 @@ class User
     protected $lastName;
 
     /**
-     * @var integer
-     */
-    protected $moneyAmount;
-
-    /**
      * @return int
      */
     public function getId(): int
