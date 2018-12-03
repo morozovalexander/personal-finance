@@ -8,20 +8,17 @@ use PDOException;
 
 class MoneyService
 {
-    /**
-     * @var User
-     */
+    /** @var User */
     protected $user;
 
-    /**
-     * @var Database
-     */
+    /** @var Database */
     protected $db;
 
-    /**
-     * @var string
-     */
+    /** @var string */
     protected $validationMessage;
+
+    /** @var array */
+    protected $availableCurrencies = ['rubles', 'dinars'];
 
     /**
      * @param User $user
@@ -48,6 +45,11 @@ class MoneyService
             return $returnArr;
         }
 
+        if (!isset($_POST['currency']) || !\in_array($_POST['currency'], $this->availableCurrencies, true)) {
+            return $returnArr;
+        }
+        $currency = $_POST['currency'];
+
         // begin transaction, lock row while reading current value
         $userId = $this->user->getId();
 
@@ -60,7 +62,7 @@ class MoneyService
                 . 'INNER JOIN users u ON w.user_id = u.id '
                 . 'INNER JOIN currency c ON w.currency_id = c.id '
                 . 'WHERE u.id = :id AND c.name = :currency FOR UPDATE;';
-            $selectAmountWithLockSqlParams = ['id' => $userId, 'currency' => 'rubles'];
+            $selectAmountWithLockSqlParams = ['id' => $userId, 'currency' => $currency];
             $currMoneyArray = $this->db->query($selectAmountWithLockSql, $selectAmountWithLockSqlParams)->fetch();
 
             $currentAmount = (int)$currMoneyArray['money_amount'];
@@ -87,7 +89,7 @@ class MoneyService
                 'id' => $userId,
                 'new_money_amount' => $newMoneyAmount,
                 'current_money_amount' => $currentAmount,
-                'currency' => 'rubles'
+                'currency' => $currency
             ];
 
             $updateResult = $this->db->query($updateUserWalletSql, $updateUserWalletParams);

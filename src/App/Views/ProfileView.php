@@ -100,6 +100,7 @@ class ProfileView
                  <div class="form-group">
                         <label for="money-amount-input">Rubles amount to pull:</label>
                         <input name="money-amount" type="number" step="0.01" class="form-control" id="money-amount-input" placeholder="0">
+                        <input type="hidden" name="currency" value="rubles">
                  </div>
                  <button class="btn btn-lg btn-primary btn-block" type="submit">Pull out</button>
             </form>
