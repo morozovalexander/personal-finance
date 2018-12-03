@@ -3,6 +3,7 @@
 namespace App\Model;
 
 use App\Service\Database;
+use PDO;
 
 class UserMapper
 {
@@ -35,7 +36,7 @@ class UserMapper
     {
         $queryString = 'SELECT password FROM users WHERE id = :id';
         $result = $this->db->query($queryString, ['id' => $user->getId()]);
-        $userDataArray = $result->fetch(\PDO::FETCH_ASSOC);
+        $userDataArray = $result->fetch(PDO::FETCH_ASSOC);
 
         return $userDataArray['password'] ?? null;
     }
@@ -51,7 +52,7 @@ class UserMapper
             . 'WHERE user_id = :id AND c.name = :currency';
 
         $result = $this->db->query($queryString, ['id' => $user->getId(), 'currency' => 'rubles']);
-        $walletArray = $result->fetch(\PDO::FETCH_ASSOC);
+        $walletArray = $result->fetch(PDO::FETCH_ASSOC);
 
         return $walletArray['money_amount'] ? $walletArray :  null;
     }
@@ -86,7 +87,7 @@ class UserMapper
     {
         $queryString = 'SELECT * FROM users WHERE username = :username';
         $result = $this->db->query($queryString, ['username' => $username]);
-        $userDataArray = $result->fetch(\PDO::FETCH_ASSOC);
+        $userDataArray = $result->fetch(PDO::FETCH_ASSOC);
 
         return $userDataArray ?: null;
     }
