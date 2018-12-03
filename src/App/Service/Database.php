@@ -6,6 +6,8 @@ use PDO;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use App\Config\Config;
+use PDOException;
+use PDOStatement;
 
 class Database
 {
@@ -72,7 +74,7 @@ class Database
             $debugParams = [];
 
             foreach ($queryParamsArray as $queryParams) {
-                /** @var \PDOStatement $statement */
+                /** @var PDOStatement $statement */
                 $statement = $this->pdo->prepare($queryParams['sql']);
                 foreach ($queryParams['params'] as $key => $val) {
                     if (\is_int($val)) {
@@ -89,7 +91,7 @@ class Database
 
             $success = $this->pdo->commit();
             $this->logger->info('transaction successful', $debugParams);
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             $this->pdo->rollBack();
             $this->logger->err('transaction error:' . $e->getMessage());
         }

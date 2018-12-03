@@ -3,7 +3,8 @@
 namespace App\Service;
 
 use App\Model\User;
-use App\Model\UserMapper;
+use PDO;
+use PDOException;
 
 class MoneyService
 {
@@ -52,7 +53,7 @@ class MoneyService
 
         try {
             // query to lock writing
-            $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->db->beginTransaction();
 
             $selectAmountWithLockSql = 'SELECT w.money_amount, c.prec FROM wallet w '
@@ -103,7 +104,7 @@ class MoneyService
 
             $returnArr['success'] = true;
             $returnArr['message'] = 'Successful transaction';
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             $this->db->rollback();
             $this->db->logErr('transaction error: ' . $e->getMessage());
             $returnArr['message'] = 'Database error';
