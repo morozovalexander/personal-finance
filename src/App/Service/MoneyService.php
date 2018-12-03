@@ -2,9 +2,12 @@
 
 namespace App\Service;
 
+use App\Config\Config;
 use App\Model\User;
 use PDO;
 use PDOException;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 
 class MoneyService
 {
@@ -20,6 +23,9 @@ class MoneyService
     /** @var array */
     protected $availableCurrencies = ['rubles', 'dinars'];
 
+    /** @var Logger */
+    protected $logger;
+
     /**
      * @param User $user
      * @param Database $db
@@ -28,6 +34,8 @@ class MoneyService
     {
         $this->user = $user;
         $this->db = $db;
+        $this->logger = new Logger('name');
+        $this->logger->pushHandler(new StreamHandler(Config::getConfigs()['logs_path'], Logger::DEBUG));
     }
 
     /**
@@ -42,10 +50,13 @@ class MoneyService
 
         if (!isset($_POST['money-amount'])) {
             $returnArr['message'] = 'Invalid money amount';
+            $this->logger->err('Wrong pull money amount argument for username: ' . $this->user->getUsername());
             return $returnArr;
         }
 
         if (!isset($_POST['currency']) || !\in_array($_POST['currency'], $this->availableCurrencies, true)) {
+            $returnArr['message'] = 'Invalid currency value';
+            $this->logger->err('Invalid currency argument for username: ' . $this->user->getUsername());
             return $returnArr;
         }
         $currency = $_POST['currency'];
@@ -71,6 +82,7 @@ class MoneyService
             // money amounts validation
             if (!$this->validateMoneyAmountToPull($currentAmount, $precision, $_POST['money-amount'])) {
                 $this->db->rollback();
+                $this->logger->err('Invalid money pull params: ', $selectAmountWithLockSqlParams);
                 $returnArr['message'] = $this->validationMessage;
                 return $returnArr;
             }
@@ -95,10 +107,10 @@ class MoneyService
             $updateResult = $this->db->query($updateUserWalletSql, $updateUserWalletParams);
             if ($updateResult) {
                 $this->db->commit();
-                $this->db->logInfo('transaction successful', $updateUserWalletParams);
+                $this->logger->info('transaction successful', $updateUserWalletParams);
             } else {
                 $this->db->rollback();
-                $this->db->logErr(
+                $this->logger->err(
                     'transaction error: ',
                     array_merge($updateUserWalletParams, ['error' => $updateResult->errorInfo()])
                 );
@@ -108,7 +120,7 @@ class MoneyService
             $returnArr['message'] = 'Successful transaction';
         } catch (PDOException $e) {
             $this->db->rollback();
-            $this->db->logErr('transaction error: ' . $e->getMessage());
+            $this->logger->err('transaction error: ' . $e->getMessage());
             $returnArr['message'] = 'Database error';
         }
 

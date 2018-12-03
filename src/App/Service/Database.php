@@ -99,24 +99,6 @@ class Database
         return $success;
     }
 
-    /**
-     * @param string $message
-     * @param array $params
-     */
-    public function logInfo(string $message, array $params = []):void
-    {
-        $this->logger->info($message, $params);
-    }
-
-    /**
-     * @param string $message
-     * @param array $params
-     */
-    public function logErr(string $message, array $params = []):void
-    {
-        $this->logger->err($message, $params);
-    }
-
     public function beginTransaction(): void
     {
         $this->pdo->beginTransaction();
