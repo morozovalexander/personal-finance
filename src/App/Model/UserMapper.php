@@ -90,47 +90,4 @@ class UserMapper
 
         return $userDataArray ?: null;
     }
-
-//    /**
-//     * @param User $user
-//     * @param int $moneyToPull
-//     * @return bool|\PDOStatement
-//     */
-//    public function pullMoney(User $user, int $moneyToPull): bool
-//    {
-//        //record new money amount
-//        $rublesWallet = $this->getUserRublesWallet($user);
-//        $currentMoneyAmount = $rublesWallet['money_amount'] ?? 0;
-//        $newMoneyAmount = $currentMoneyAmount - $moneyToPull;
-//        $userId = $user->getId();
-//
-//        //query to lock writing
-//        $queryParamsArray = [];
-//
-//        $queryParamsArray[0]['sql'] = 'SELECT money_amount FROM wallet w '
-//            . 'INNER JOIN users u ON w.user_id = u.id '
-//            . 'INNER JOIN currency c ON w.currency_id = c.id '
-//            . 'WHERE u.id = :id AND c.name = :currency FOR UPDATE;';
-//        $queryParamsArray[0]['params'] = ['id' => $userId, 'currency' => 'rubles'];
-//
-//        // query to modify ("money_amount" check will block duplicating money pull)
-//
-//        $queryParamsArray[1]['sql'] = 'UPDATE wallet w '
-//            . 'INNER JOIN users u ON w.user_id = u.id '
-//            . 'INNER JOIN currency c ON w.currency_id = c.id '
-//            . 'SET w.money_amount = :new_money_amount '
-//            . 'WHERE u.id = :id AND c.name = :currency AND w.money_amount = :current_money_amount;';
-//        $queryParamsArray[1]['params'] = [
-//            'id' => $userId,
-//            'new_money_amount' => $newMoneyAmount,
-//            'current_money_amount' => $currentMoneyAmount,
-//            'currency' => 'rubles'
-//        ];
-//
-//        if ($this->db->transactionQuery($queryParamsArray)) {
-//            return true;
-//        }
-//
-//        return false;
-//    }
 }
