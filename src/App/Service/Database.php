@@ -126,9 +126,10 @@ class Database
     /**
      * @param int $attr
      * @param mixed $value
+     * @return bool
      */
-    public function setAttribute(int $attr, $value): void
+    public function setAttribute(int $attr, $value): bool
     {
-        $this->pdo->setAttribute($attr, $value);
+        return $this->pdo->setAttribute($attr, $value);
     }
 }
