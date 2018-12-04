@@ -119,7 +119,7 @@ class MoneyService
 
             $returnArr['success'] = true;
             $returnArr['message'] = 'Successful transaction';
-        } catch (PDOException $e) {
+        } catch (PDOException | \Exception $e) {
             $this->db->rollback();
             $this->logger->err('transaction error: ' . $e->getMessage());
             $returnArr['message'] = 'Database error';
