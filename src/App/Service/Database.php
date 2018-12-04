@@ -2,17 +2,14 @@
 
 namespace App\Service;
 
-use PDO;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use App\Config\Config;
-use PDOException;
-use PDOStatement;
 
 class Database
 {
     /**
-     * @var PDO
+     * @var \PDO
      */
     protected $pdo;
 
@@ -29,7 +26,7 @@ class Database
     public function __construct()
     {
         $this->configs = Config::getConfigs();
-        $this->pdo = new PDO('mysql:host=' . $this->configs['dbhost'] . ';dbname=' . $this->configs['dbname'],
+        $this->pdo = new \PDO('mysql:host=' . $this->configs['dbhost'] . ';dbname=' . $this->configs['dbname'],
             $this->configs['dbuser'],
             $this->configs['dbpass']
         );
@@ -48,9 +45,9 @@ class Database
 
         foreach ($params as $key => $val) {
             if (\is_int($val)) {
-                $type = PDO::PARAM_INT;
+                $type = \PDO::PARAM_INT;
             } else {
-                $type = PDO::PARAM_STR;
+                $type = \PDO::PARAM_STR;
             }
             $statement->bindValue(':' . $key, $val, $type);
         }
@@ -68,19 +65,19 @@ class Database
         $success = false;
 
         try {
-            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
             $this->pdo->beginTransaction();
             $debugParams = [];
 
             foreach ($queryParamsArray as $queryParams) {
-                /** @var PDOStatement $statement */
+                /** @var \PDOStatement $statement */
                 $statement = $this->pdo->prepare($queryParams['sql']);
                 foreach ($queryParams['params'] as $key => $val) {
                     if (\is_int($val)) {
-                        $type = PDO::PARAM_INT;
+                        $type = \PDO::PARAM_INT;
                     } else {
-                        $type = PDO::PARAM_STR;
+                        $type = \PDO::PARAM_STR;
                     }
                     $statement->bindValue(':' . $key, $val, $type);
                 }
@@ -91,7 +88,7 @@ class Database
 
             $success = $this->pdo->commit();
             $this->logger->info('transaction successful', $debugParams);
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $this->pdo->rollBack();
             $this->logger->err('transaction error:' . $e->getMessage());
         }

@@ -4,8 +4,6 @@ namespace App\Service;
 
 use App\Config\Config;
 use App\Model\User;
-use PDO;
-use PDOException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
@@ -65,7 +63,7 @@ class MoneyService
         $userId = $this->user->getId();
 
 
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $this->db->beginTransaction();
 
         try {
@@ -119,7 +117,7 @@ class MoneyService
 
             $returnArr['success'] = true;
             $returnArr['message'] = 'Successful transaction';
-        } catch (PDOException | \Exception $e) {
+        } catch (\PDOException | \Exception $e) {
             $this->db->rollback();
             $this->logger->err('transaction error: ' . $e->getMessage());
             $returnArr['message'] = 'Database error';
