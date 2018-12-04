@@ -64,11 +64,12 @@ class MoneyService
         // begin transaction, lock row while reading current value
         $userId = $this->user->getId();
 
+
+        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->db->beginTransaction();
+
         try {
             // query to lock writing
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->db->beginTransaction();
-
             $selectAmountWithLockSql = 'SELECT w.money_amount, c.prec FROM wallet w '
                 . 'INNER JOIN users u ON w.user_id = u.id '
                 . 'INNER JOIN currency c ON w.currency_id = c.id '
