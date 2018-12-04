@@ -57,46 +57,6 @@ class Database
     }
 
     /**
-     * @param array //  sql + params
-     * @return bool
-     */
-    public function transactionQuery(array $queryParamsArray): bool
-    {
-        $success = false;
-
-        try {
-            $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-
-            $this->pdo->beginTransaction();
-            $debugParams = [];
-
-            foreach ($queryParamsArray as $queryParams) {
-                /** @var \PDOStatement $statement */
-                $statement = $this->pdo->prepare($queryParams['sql']);
-                foreach ($queryParams['params'] as $key => $val) {
-                    if (\is_int($val)) {
-                        $type = \PDO::PARAM_INT;
-                    } else {
-                        $type = \PDO::PARAM_STR;
-                    }
-                    $statement->bindValue(':' . $key, $val, $type);
-                }
-
-                $statement->execute();
-                $debugParams[] = $queryParams['params'];
-            }
-
-            $success = $this->pdo->commit();
-            $this->logger->info('transaction successful', $debugParams);
-        } catch (\PDOException $e) {
-            $this->pdo->rollBack();
-            $this->logger->err('transaction error:' . $e->getMessage());
-        }
-
-        return $success;
-    }
-
-    /**
      * @return bool
      */
     public function beginTransaction(): bool
