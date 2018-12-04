@@ -26,13 +26,13 @@ class WalletMapper
      */
     public function getWalletWithCurrency(int $userId, string $currencyName): ?Wallet
     {
-        $sql = 'SELECT w.id AS wallet_id, w.money_amount '
-            . 'c.id AS currency_id, c.name AS currency_name, c.prec AS currency_precision'
+        $sql = 'SELECT w.id AS wallet_id, w.money_amount, '
+            . 'c.id AS currency_id, c.name AS currency_name, c.prec AS currency_precision '
             . 'FROM wallet w '
             . 'INNER JOIN users u ON w.user_id = u.id '
             . 'INNER JOIN currency c ON w.currency_id = c.id '
-            . 'WHERE u.id = :id AND c.name = :currency_name;';
-        $params = ['id' => $userId, 'currency_name' => $currencyName];
+            . 'WHERE u.id = :user_id AND c.name = :currency_name;';
+        $params = ['user_id' => $userId, 'currency_name' => $currencyName];
 
         if (!$walletDataArray = $this->db->query($sql, $params)->fetch()){
             return null;
@@ -40,7 +40,7 @@ class WalletMapper
 
         $wallet = new Wallet();
 
-        $wallet->setId($walletDataArray['id']);
+        $wallet->setId($walletDataArray['wallet_id']);
         $wallet->setMoneyAmount($walletDataArray['money_amount']);
 
         $currency = new Currency();
