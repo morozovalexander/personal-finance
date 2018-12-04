@@ -99,19 +99,28 @@ class Database
         return $success;
     }
 
-    public function beginTransaction(): void
+    /**
+     * @return bool
+     */
+    public function beginTransaction(): bool
     {
-        $this->pdo->beginTransaction();
+        return $this->pdo->beginTransaction();
     }
 
-    public function commit(): void
+    /**
+     * @return bool
+     */
+    public function commit(): bool
     {
-        $this->pdo->commit();
+        return $this->pdo->commit();
     }
 
-    public function rollback(): void
+    /**
+     * @return bool
+     */
+    public function rollback(): bool
     {
-        $this->pdo->rollBack();
+        return $this->pdo->rollBack();
     }
 
     /**
