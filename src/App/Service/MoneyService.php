@@ -66,20 +66,25 @@ class MoneyService
         $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $this->db->beginTransaction();
 
+        $getWalletInfoSQL = 'SELECT w.id AS wallet_id, c.prec FROM wallet w '
+            . 'INNER JOIN users u ON w.user_id = u.id '
+            . 'INNER JOIN currency c ON w.currency_id = c.id '
+            . 'WHERE u.id = :id AND c.name = :currency;';
+        $getWalletInfoSQLParams = ['id' => $userId, 'currency' => $currency];
+
+        // todo: replace in separate method or mapper
+        $walletInfo = $this->db->query($getWalletInfoSQL, $getWalletInfoSQLParams)->fetch();
+
         try {
             // query to lock writing
-            $selectAmountWithLockSql = 'SELECT w.money_amount, c.prec FROM wallet w '
-                . 'INNER JOIN users u ON w.user_id = u.id '
-                . 'INNER JOIN currency c ON w.currency_id = c.id '
-                . 'WHERE u.id = :id AND c.name = :currency FOR UPDATE;';
-            $selectAmountWithLockSqlParams = ['id' => $userId, 'currency' => $currency];
+            $selectAmountWithLockSql = 'SELECT w.money_amount FROM wallet w WHERE w.id = :wallet_id FOR UPDATE;';
+            $selectAmountWithLockSqlParams = ['wallet_id' => $walletInfo['wallet_id']];
             $currMoneyArray = $this->db->query($selectAmountWithLockSql, $selectAmountWithLockSqlParams)->fetch();
 
             $currentAmount = (int)$currMoneyArray['money_amount'];
-            $precision = $currMoneyArray['prec'];
 
             // money amounts validation
-            if (!$this->validateMoneyAmountToPull($currentAmount, $precision, $_POST['money-amount'])) {
+            if (!$this->validateMoneyAmountToPull($currentAmount, $walletInfo['prec'], $_POST['money-amount'])) {
                 $this->db->rollback();
                 $this->logger->err('Invalid money pull params: ', $selectAmountWithLockSqlParams);
                 $returnArr['message'] = $this->validationMessage;
@@ -87,20 +92,14 @@ class MoneyService
             }
 
             // new amount calculation
-            $moneyToPull = $this->parseIntegerMoneyToPull($_POST['money-amount'], $precision);
+            $moneyToPull = $this->parseIntegerMoneyToPull($_POST['money-amount'], $walletInfo['prec']);
             $newMoneyAmount = $currentAmount - $moneyToPull;
 
             // update wallet money amount
-            $updateUserWalletSql = 'UPDATE wallet w '
-                . 'INNER JOIN users u ON w.user_id = u.id '
-                . 'INNER JOIN currency c ON w.currency_id = c.id '
-                . 'SET w.money_amount = :new_money_amount '
-                . 'WHERE u.id = :id AND c.name = :currency AND w.money_amount = :current_money_amount;';
+            $updateUserWalletSql = 'UPDATE wallet w SET w.money_amount = :new_money_amount WHERE w.id = :wallet_id;';
             $updateUserWalletParams = [
-                'id' => $userId,
                 'new_money_amount' => $newMoneyAmount,
-                'current_money_amount' => $currentAmount,
-                'currency' => $currency
+                'wallet_id' => $walletInfo['wallet_id']
             ];
 
             $updateResult = $this->db->query($updateUserWalletSql, $updateUserWalletParams);
