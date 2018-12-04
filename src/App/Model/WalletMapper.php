@@ -34,7 +34,7 @@ class WalletMapper
             . 'WHERE u.id = :user_id AND c.name = :currency_name;';
         $params = ['user_id' => $userId, 'currency_name' => $currencyName];
 
-        if (!$walletDataArray = $this->db->query($sql, $params)->fetch()){
+        if (!$walletDataArray = $this->db->query($sql, $params)->fetch(\PDO::FETCH_ASSOC)) {
             return null;
         }
 
@@ -51,5 +51,37 @@ class WalletMapper
         $wallet->setCurrency($currency);
 
         return $wallet;
+    }
+
+    /**
+     * @param int $walletId
+     * @return int
+     */
+    public function selectMoneyAmountWithLock(int $walletId): int
+    {
+        $sql = 'SELECT w.money_amount FROM wallet w WHERE w.id = :wallet_id FOR UPDATE;';
+        $params = ['wallet_id' => $walletId];
+
+        if (!$currMoneyArray = $this->db->query($sql, $params)->fetch(\PDO::FETCH_ASSOC)) {
+            return 0;
+        }
+
+        return (int)($currMoneyArray['money_amount'] ?? 0);
+    }
+
+    /**
+     * @param int $walletId
+     * @param int $newMoneyAmount
+     * @return bool|\PDOStatement
+     */
+    public function updateWalletMoneyAmount(int $walletId, int $newMoneyAmount)
+    {
+        $sql = 'UPDATE wallet w SET w.money_amount = :new_money_amount WHERE w.id = :wallet_id;';
+        $params = [
+            'new_money_amount' => $newMoneyAmount,
+            'wallet_id' => $walletId
+        ];
+
+        return $this->db->query($sql, $params);
     }
 }

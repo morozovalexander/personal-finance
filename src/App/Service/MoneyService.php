@@ -4,6 +4,8 @@ namespace App\Service;
 
 use App\Config\Config;
 use App\Model\User;
+use App\Model\Wallet;
+use App\Model\WalletMapper;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
@@ -62,55 +64,47 @@ class MoneyService
         // begin transaction, lock row while reading current value
         $userId = $this->user->getId();
 
-
         $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $this->db->beginTransaction();
 
-        $getWalletInfoSQL = 'SELECT w.id AS wallet_id, c.prec FROM wallet w '
-            . 'INNER JOIN users u ON w.user_id = u.id '
-            . 'INNER JOIN currency c ON w.currency_id = c.id '
-            . 'WHERE u.id = :id AND c.name = :currency;';
-        $getWalletInfoSQLParams = ['id' => $userId, 'currency' => $currency];
+        $walletMapper = new WalletMapper($this->db);
 
-        // todo: replace in separate method or mapper
-        $walletInfo = $this->db->query($getWalletInfoSQL, $getWalletInfoSQLParams)->fetch();
+        if(!$wallet = $walletMapper->getWalletWithCurrency($userId, $currency)) {
+            $returnArr['message'] = 'Invalid wallet query';
+            $this->logger->err('Invalid currency argument for username: ' . $this->user->getUsername());
+            return $returnArr;
+        }
+
+        $precision = $wallet->getCurrency()->getPrecision();
 
         try {
             // query to lock writing
-            $selectAmountWithLockSql = 'SELECT w.money_amount FROM wallet w WHERE w.id = :wallet_id FOR UPDATE;';
-            $selectAmountWithLockSqlParams = ['wallet_id' => $walletInfo['wallet_id']];
-            $currMoneyArray = $this->db->query($selectAmountWithLockSql, $selectAmountWithLockSqlParams)->fetch();
-
-            $currentAmount = (int)$currMoneyArray['money_amount'];
+            $currentAmount = $walletMapper->selectMoneyAmountWithLock($wallet->getId());
 
             // money amounts validation
-            if (!$this->validateMoneyAmountToPull($currentAmount, $walletInfo['prec'], $_POST['money-amount'])) {
+            if (!$this->validateMoneyAmountToPull($currentAmount, $precision, $_POST['money-amount'])) {
                 $this->db->rollback();
-                $this->logger->err('Invalid money pull params: ', $selectAmountWithLockSqlParams);
+                $this->logger->err('Invalid money pull params for username: ' . $this->user->getUsername());
                 $returnArr['message'] = $this->validationMessage;
                 return $returnArr;
             }
 
             // new amount calculation
-            $moneyToPull = $this->parseIntegerMoneyToPull($_POST['money-amount'], $walletInfo['prec']);
+            $moneyToPull = $this->parseIntegerMoneyToPull($_POST['money-amount'], $precision);
             $newMoneyAmount = $currentAmount - $moneyToPull;
 
             // update wallet money amount
-            $updateUserWalletSql = 'UPDATE wallet w SET w.money_amount = :new_money_amount WHERE w.id = :wallet_id;';
-            $updateUserWalletParams = [
-                'new_money_amount' => $newMoneyAmount,
-                'wallet_id' => $walletInfo['wallet_id']
-            ];
-
-            $updateResult = $this->db->query($updateUserWalletSql, $updateUserWalletParams);
-            if ($updateResult) {
+            if ($updateRes = $walletMapper->updateWalletMoneyAmount($wallet->getId(), $newMoneyAmount)) {
                 $this->db->commit();
-                $this->logger->info('transaction successful', $updateUserWalletParams);
+                $this->logger->info(
+                    'transaction successful for username: ' . $this->user->getUsername(),
+                    ['walletId' => $wallet->getId(), 'newAmount' => $newMoneyAmount]
+                );
             } else {
                 $this->db->rollback();
                 $this->logger->err(
-                    'transaction error: ',
-                    array_merge($updateUserWalletParams, ['error' => $updateResult->errorInfo()])
+                    'transaction error for username: ' . $this->user->getUsername(),
+                    ['walletId' => $wallet->getId(), 'newAmount' => $newMoneyAmount, 'err' => $updateRes->errorInfo()]
                 );
             }
 
