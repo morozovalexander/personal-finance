@@ -64,9 +64,6 @@ class MoneyService
         // begin transaction, lock row while reading current value
         $userId = $this->user->getId();
 
-        $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        $this->db->beginTransaction();
-
         $walletMapper = new WalletMapper($this->db);
 
         if(!$wallet = $walletMapper->getWalletWithCurrency($userId, $currency)) {
@@ -76,6 +73,9 @@ class MoneyService
         }
 
         $precision = $wallet->getCurrency()->getPrecision();
+
+        $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $this->db->beginTransaction();
 
         try {
             // query to lock writing
