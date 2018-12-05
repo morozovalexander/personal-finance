@@ -4,7 +4,6 @@ namespace App\Service;
 
 use App\Config\Config;
 use App\Model\User;
-use App\Model\Wallet;
 use App\Model\WalletMapper;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
